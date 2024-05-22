@@ -4,28 +4,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import top.nabil.nugazlah.R
-import top.nabil.nugazlah.data.TutorialData
+import top.nabil.nugazlah.data.model.TutorialData
 import top.nabil.nugazlah.ui.theme.PurpleSecondSurface
 import top.nabil.nugazlah.ui.theme.PurpleSurface
-import top.nabil.nugazlah.ui.theme.PurpleType
 import top.nabil.nugazlah.ui.theme.WhitePlain
 
 @Composable
@@ -39,15 +32,15 @@ fun TutorialDialog(
         ),
         TutorialData(
             icon = "\uD83D\uDE0E",
-            description = "Tugas masi lama. Sans aja"
+            description = "Masih lebih dari seminggu. Sans aja"
         ),
         TutorialData(
             icon = "\uD83D\uDE36\u200D\uD83C\uDF2B\uFE0F",
-            description = "Tinggal 1-3 hari bang. Cepetan dikit"
+            description = "Tinggal 1-7 hari bang. Cepetan dikit"
         ),
         TutorialData(
             icon = "⛔",
-            description = "Mepet bang. Buruan"
+            description = "Kurang dari 1 hari bang. Buruan"
         ),
         TutorialData(
             icon = "☠\uFE0F",

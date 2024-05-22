@@ -7,7 +7,8 @@ val DarkTitle = Color(0xFF121511)
 
 val GreenCard = Color(0xFFB9C6AE)
 val GreenTertiary = Color(0xFF363E35)
-val GreenChill = Color(0xFF004307)
+val GreenChill = Color(0xFF005008)
+val GreenDone = Color(0xFF003A06)
 
 val OrangeGuru = Color(0xFF923D00)
 val OrangeAlert = Color(0xFFD25800)

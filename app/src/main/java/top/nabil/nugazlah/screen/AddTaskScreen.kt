@@ -1,9 +1,9 @@
 package top.nabil.nugazlah.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,10 +13,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerColors
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,21 +30,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -46,38 +51,48 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 import top.nabil.nugazlah.R
-import top.nabil.nugazlah.data.TaskData
-import top.nabil.nugazlah.data.taskTypeIcon
+import top.nabil.nugazlah.data.model.taskTypeIcon
 import top.nabil.nugazlah.ui.component.CustomButton
 import top.nabil.nugazlah.ui.component.CustomInput
 import top.nabil.nugazlah.ui.component.CustomTextArea
+import top.nabil.nugazlah.ui.component.TimePickerDialog
 import top.nabil.nugazlah.ui.component.TutorialDialog
 import top.nabil.nugazlah.ui.component.TutorialIcon
-import top.nabil.nugazlah.ui.theme.BlackTypo
-import top.nabil.nugazlah.ui.theme.GreenCard
+import top.nabil.nugazlah.ui.theme.GreenChill
 import top.nabil.nugazlah.ui.theme.Inter
 import top.nabil.nugazlah.ui.theme.PurpleSurface
 import top.nabil.nugazlah.ui.theme.PurpleType
 import top.nabil.nugazlah.ui.theme.WhitePlaceholder
 import top.nabil.nugazlah.ui.theme.WhitePlain
+import top.nabil.nugazlah.util.ParseTime
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun AddTaskScreen(
     modifier: Modifier = Modifier,
-    navController: NavController
+    navController: NavController,
+    vm: AddTaskViewModel
 ) {
-    var isTutorialDialogOpen by remember { mutableStateOf(false) }
-    var isTaskTypeDialogOpen by remember { mutableStateOf(false) }
-    val onDismissRequest = { isTutorialDialogOpen = !isTutorialDialogOpen }
+    val dateState = rememberDatePickerState()
+    val timeState = rememberTimePickerState()
+    val state = vm.state.collectAsState().value
 
-    var taskTitle by remember { mutableStateOf("") }
-    var taskDescription by remember { mutableStateOf("") }
-    var taskDetail by remember { mutableStateOf("") }
-    var taskType by remember { mutableStateOf("Proposal") }
-    var taskSubmission by remember { mutableStateOf("") }
-    var taskDeadline by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(key1 = true) {
+        vm.eventFlow.collect { event ->
+            when (event) {
+                is AddTaskScreenEvent.ShowToast -> {
+                    coroutineScope.launch {
+                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -95,8 +110,8 @@ fun AddTaskScreen(
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         text = stringResource(id = R.string.add_task),
-                        color = WhitePlain,
                         overflow = TextOverflow.Ellipsis,
+                        color = WhitePlain,
                         style = MaterialTheme.typography.headlineSmall,
                         fontSize = 20.sp,
                         maxLines = 2,
@@ -119,11 +134,11 @@ fun AddTaskScreen(
             CustomInput(
                 modifier = Modifier.fillMaxWidth(),
                 hint = stringResource(id = R.string.task_title_placeholder),
-                text = taskTitle,
+                text = state.title,
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Next
                 ),
-                onChange = { taskTitle = it }
+                onChange = { vm.onStateChange(state.copy(title = it)) }
             )
 
             Spacer(
@@ -139,8 +154,8 @@ fun AddTaskScreen(
             )
             CustomTextArea(
                 hint = stringResource(id = R.string.task_description_placeholder),
-                text = taskDescription,
-                onChange = { taskDescription = it },
+                text = state.description,
+                onChange = { vm.onStateChange(state.copy(description = it)) },
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Next
                 ),
@@ -160,11 +175,11 @@ fun AddTaskScreen(
             CustomInput(
                 modifier = Modifier.fillMaxWidth(),
                 hint = stringResource(id = R.string.task_detail_placeholder),
-                text = taskDetail,
+                text = state.taskDetail,
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Next
                 ),
-                onChange = { taskDetail = it }
+                onChange = { vm.onStateChange(state.copy(taskDetail = it)) },
             )
 
             Spacer(
@@ -181,11 +196,11 @@ fun AddTaskScreen(
             CustomInput(
                 modifier = Modifier.fillMaxWidth(),
                 hint = stringResource(id = R.string.task_submission_placeholder),
-                text = taskSubmission,
+                text = state.taskSubmission,
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Next
                 ),
-                onChange = { taskSubmission = it }
+                onChange = { vm.onStateChange(state.copy(taskSubmission = it)) },
             )
 
             Spacer(
@@ -203,7 +218,7 @@ fun AddTaskScreen(
                 modifier = modifier
                     .fillMaxWidth()
                     .clickable {
-                        isTaskTypeDialogOpen = !isTaskTypeDialogOpen
+                        vm.onStateChange(state.copy(isTaskTypeDialogOpen = true))
                     }
                     .clip(MaterialTheme.shapes.medium)
                     .background(WhitePlain)
@@ -213,12 +228,12 @@ fun AddTaskScreen(
             ) {
                 TutorialIcon(
                     modifier = Modifier.padding(end = 16.dp),
-                    icon = taskTypeIcon[taskType] ?: ""
+                    icon = taskTypeIcon[state.taskType] ?: ""
                 ) {
-                    onDismissRequest()
+                    vm.onStateChange(state.copy(isTaskTypeDialogOpen = false))
                 }
                 Text(
-                    text = taskType,
+                    text = state.taskType,
                     style = MaterialTheme.typography.titleLarge
                 )
             }
@@ -239,22 +254,38 @@ fun AddTaskScreen(
                     .fillMaxWidth()
                     .shadow(5.dp, MaterialTheme.shapes.medium)
                     .background(WhitePlain, MaterialTheme.shapes.medium)
+                    .clickable {
+                        vm.onStateChange(state.copy(isDatePickerDialogOpen = true))
+                    }
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    modifier = Modifier
-                        .padding(end = 16.dp),
-                    text = "\uD83D\uDD53",
-                    fontSize = 28.sp
-                )
-                Text(
-                    text = stringResource(id = R.string.task_deadline_placeholder),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Normal,
-                    fontFamily = Inter,
-                    color = WhitePlaceholder
-                )
+                if (state.deadline == "") {
+                    Text(
+                        modifier = Modifier
+                            .padding(end = 16.dp),
+                        text = "\uD83D\uDD53",
+                        fontSize = 28.sp
+                    )
+                    Text(
+                        text = stringResource(id = R.string.task_deadline_placeholder),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Normal,
+                        fontFamily = Inter,
+                        color = WhitePlaceholder
+                    )
+                } else {
+                    TextBox(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        text = state.deadline,
+                        textStyle = MaterialTheme.typography.titleLarge.copy(
+                            textAlign = TextAlign.Center,
+                            lineHeight = 28.sp
+                        )
+                    )
+                }
+
             }
 
             Spacer(
@@ -269,29 +300,30 @@ fun AddTaskScreen(
                 horizontalArrangement = Arrangement.End
             ) {
                 CustomButton(
+                    isLoading = vm.isCreateTaskLoading,
                     text = stringResource(id = R.string.button_text_confirm),
                     textStyle = MaterialTheme.typography.labelMedium.copy(
                         fontSize = 16.sp,
                         fontFamily = Inter,
                         color = PurpleType
                     ),
-                    onClick = {
-                        navController.popBackStack()
-                    },
+                    onClick = vm::createTask
                 )
             }
         }
     }
 
-    if (isTutorialDialogOpen) {
+    if (state.isTutorialDialogOpen) {
         TutorialDialog {
-            onDismissRequest()
+            vm.onStateChange(state.copy(isTutorialDialogOpen = false))
         }
     }
 
-    if (isTaskTypeDialogOpen) {
+    if (state.isTaskTypeDialogOpen) {
         BasicAlertDialog(
-            onDismissRequest = { isTaskTypeDialogOpen = !isTaskTypeDialogOpen },
+            onDismissRequest = {
+                vm.onStateChange(state.copy(isTaskTypeDialogOpen = false))
+            },
         ) {
             Column(
                 modifier = Modifier
@@ -306,15 +338,23 @@ fun AddTaskScreen(
                             .fillMaxWidth()
                             .padding(bottom = 4.dp),
                         onClick = {
-                            isTaskTypeDialogOpen = !isTaskTypeDialogOpen
-                            taskType = t
+                            vm.onStateChange(
+                                state.copy(
+                                    taskType = t,
+                                    isTaskTypeDialogOpen = false
+                                )
+                            )
                         }
                     ) {
                         TutorialIcon(
                             modifier = Modifier.padding(end = 16.dp),
                             icon = taskTypeIcon[t] ?: "",
                         ) {
-                            onDismissRequest()
+                            vm.onStateChange(
+                                state.copy(
+                                    isTutorialDialogOpen = false
+                                )
+                            )
                         }
                         Text(
                             text = t,
@@ -323,6 +363,103 @@ fun AddTaskScreen(
                     }
                 }
             }
+        }
+    }
+
+    if (state.isDatePickerDialogOpen) {
+        DatePickerDialog(
+            colors = DatePickerDefaults.colors().copy(
+                headlineContentColor = WhitePlain,
+                titleContentColor = WhitePlain,
+                subheadContentColor = WhitePlain,
+                selectedDayContentColor = WhitePlain,
+                selectedDayContainerColor = GreenChill
+            ),
+            tonalElevation = 6.dp,
+            onDismissRequest = {
+                vm.onStateChange(state.copy(isDatePickerDialogOpen = false))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.onStateChange(
+                            state.copy(
+                                isDatePickerDialogOpen = false,
+                                isTimePickerDialogOpen = true,
+                                date = ParseTime.formatDateToString(dateState)
+                            )
+                        )
+                    }
+                ) {
+                    Text(
+                        "OK", color = WhitePlain,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontSize = 20.sp,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        vm.onStateChange(state.copy(isDatePickerDialogOpen = false))
+                    }
+                ) {
+                    Text(
+                        "Cancel", color = WhitePlain,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontSize = 20.sp,
+                    )
+                }
+            },
+        ) {
+            DatePicker(
+                state = dateState,
+            )
+        }
+    }
+    if (state.isTimePickerDialogOpen) {
+        TimePickerDialog(
+            onDismissRequest = {
+                vm.onStateChange(state.copy(isTimePickerDialogOpen = false))
+            },
+            ignoredConfirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.onStateChange(
+                            state.copy(
+                                isTimePickerDialogOpen = false,
+                                time = ParseTime.formatTimeToString(timeState)
+                            )
+                        )
+                        vm.formatDeadline()
+                    }
+                ) {
+                    Text(
+                        "OK",
+                        color = WhitePlain,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontSize = 20.sp,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        vm.onStateChange(state.copy(isTimePickerDialogOpen = false))
+                    }
+                ) {
+                    Text(
+                        "Cancel",
+                        color = WhitePlain,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontSize = 20.sp,
+                    )
+                }
+            },
+        ) {
+            TimePicker(
+                state = timeState,
+            )
         }
     }
 }

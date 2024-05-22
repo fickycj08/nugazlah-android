@@ -2,9 +2,11 @@ package top.nabil.nugazlah.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -22,15 +24,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.nabil.nugazlah.data.ClassCardState
+import top.nabil.nugazlah.data.model.ClassCardState
+import top.nabil.nugazlah.screen.ClassData
 import top.nabil.nugazlah.ui.theme.GreenCard
 import top.nabil.nugazlah.ui.theme.JetbrainsMono
 import top.nabil.nugazlah.ui.theme.OrangeGuru
+import top.nabil.nugazlah.ui.theme.PurpleSurface
 
 @Composable
 fun ClassCard(
     modifier: Modifier = Modifier,
-    data: ClassCardState,
+    data: ClassData,
     onClick: (String) -> Unit = {},
 ) {
     Column(
@@ -53,7 +57,7 @@ fun ClassCard(
                     .weight(1f)
             ) {
                 Text(
-                    text = data.title,
+                    text = data.name,
                     style = MaterialTheme.typography.titleLarge
                 )
                 Text(
@@ -77,11 +81,22 @@ fun ClassCard(
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = data.lecturer,
-            style = MaterialTheme.typography.labelMedium,
-            fontFamily = JetbrainsMono,
-            color = OrangeGuru
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = data.code,
+                style = MaterialTheme.typography.labelMedium,
+                fontFamily = JetbrainsMono,
+                color = PurpleSurface
+            )
+            Text(
+                text = data.lecturer,
+                style = MaterialTheme.typography.labelMedium,
+                fontFamily = JetbrainsMono,
+                color = OrangeGuru
+            )
+        }
     }
 }

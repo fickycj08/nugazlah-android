@@ -1,6 +1,7 @@
 package top.nabil.nugazlah.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,7 +23,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.nabil.nugazlah.data.TaskCardState
+import top.nabil.nugazlah.data.model.TaskCardState
+import top.nabil.nugazlah.data.model.deadlineColor
+import top.nabil.nugazlah.data.model.determineDeadlineType
+import top.nabil.nugazlah.screen.TaskData
+import top.nabil.nugazlah.ui.theme.BlackPlaceholder
 import top.nabil.nugazlah.ui.theme.GreenCard
 import top.nabil.nugazlah.ui.theme.JetbrainsMono
 import top.nabil.nugazlah.ui.theme.RedDanger
@@ -30,7 +35,9 @@ import top.nabil.nugazlah.ui.theme.RedDanger
 @Composable
 fun TaskCard(
     modifier: Modifier = Modifier,
-    data: TaskCardState,
+    data: TaskData,
+    deadlineColor: Color,
+    onClick: () -> Unit = {},
     onDismissRequest: () -> Unit,
 ) {
     Column(
@@ -41,6 +48,9 @@ fun TaskCard(
             )
             .clip(MaterialTheme.shapes.medium)
             .background(GreenCard)
+            .clickable {
+                onClick()
+            }
             .padding(8.dp),
         horizontalAlignment = Alignment.End
     ) {
@@ -67,12 +77,14 @@ fun TaskCard(
                     onClick = onDismissRequest
                 ) {
                     Text(
-                        text = data.reminderIcon,
+                        text = data.deadlineIcon,
                         style = TextStyle(
                             fontSize = 24.sp,
                             lineHeight = 24.sp,
                             shadow = Shadow(
-                                color = Color.Black, offset = Offset(5.0f, 10.0f), blurRadius = 3f
+                                color = Color.Black,
+                                offset = Offset(5.0f, 10.0f),
+                                blurRadius = 3f
                             )
                         )
                     )
@@ -81,12 +93,14 @@ fun TaskCard(
                     onClick = onDismissRequest
                 ) {
                     Text(
-                        text = data.assignmentTypeIcon,
+                        text = data.taskTypeIcon,
                         style = TextStyle(
                             fontSize = 24.sp,
                             lineHeight = 24.sp,
                             shadow = Shadow(
-                                color = Color.Black, offset = Offset(5.0f, 10.0f), blurRadius = 3f
+                                color = Color.Black,
+                                offset = Offset(5.0f, 10.0f),
+                                blurRadius = 3f
                             )
                         )
                     )
@@ -98,7 +112,7 @@ fun TaskCard(
             text = data.deadline,
             style = MaterialTheme.typography.labelMedium,
             fontFamily = JetbrainsMono,
-            color = RedDanger
+            color = deadlineColor,
         )
     }
 }

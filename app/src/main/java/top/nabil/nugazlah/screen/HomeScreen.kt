@@ -1,136 +1,250 @@
 package top.nabil.nugazlah.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.IconButton
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.ExitToApp
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallTopAppBar
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.capitalize
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 import top.nabil.nugazlah.R
-import top.nabil.nugazlah.data.ClassCardState
 import top.nabil.nugazlah.ui.component.ClassCard
 import top.nabil.nugazlah.ui.component.CustomButton
 import top.nabil.nugazlah.ui.component.CustomInput
 import top.nabil.nugazlah.ui.component.CustomTextArea
 import top.nabil.nugazlah.ui.component.FloatingActionButtonCustom
-import top.nabil.nugazlah.ui.component.TutorialDialog
+import top.nabil.nugazlah.ui.theme.GreenCard
 import top.nabil.nugazlah.ui.theme.JetbrainsMono
 import top.nabil.nugazlah.ui.theme.PurpleSurface
 import top.nabil.nugazlah.ui.theme.WhitePlain
 import java.util.Locale
+import top.nabil.nugazlah.ui.theme.WhitePlaceholder
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    navController: NavController
+    navController: NavController,
+    vm: HomeViewModel
 ) {
-    var isDialogOpen by remember { mutableStateOf(false) }
-    var isDialogJoinRoomOpen by remember { mutableStateOf(false) }
-    var isDialogMakeRoomOpen by remember { mutableStateOf(false) }
+    val state = vm.state.collectAsState().value
+    val swipeRefreshState = rememberPullRefreshState(vm.isGetClassesLoading, { vm.getMyClasses() })
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    var classCode by remember { mutableStateOf("") }
+    LaunchedEffect(navController.currentBackStackEntry) {
+        vm.getMyClasses()
+    }
 
-    var classLecturer by remember { mutableStateOf("") }
-    var className by remember { mutableStateOf("") }
-    var classDescription by remember { mutableStateOf("") }
-    var classIcon by remember { mutableStateOf("") }
-
-    val classes = listOf(
-        ClassCardState(
-            id = "1", title = "PengProf (Pengembangan Profesionalisme)",
-            description = "Biar kita profesional dalam menguli bang, ntar bistu kita kaya",
-            lecturer = "Rahayu siapa gitu - RHP",
-            icon = "\uD83D\uDE80"
-        ),
-        ClassCardState(
-            id = "2", title = "PengProf (Pengembangan Profesionalisme)",
-            description = "Biar kita profesional dalam menguli bang, ntar bistu kita kaya",
-            lecturer = "Rahayu siapa gitu - RHP",
-            icon = "\uD83D\uDE80"
-        ),
-        ClassCardState(
-            id = "3", title = "PengProf (Pengembangan Profesionalisme)",
-            description = "Biar kita profesional dalam menguli bang, ntar bistu kita kaya",
-            lecturer = "Rahayu siapa gitu - RHP",
-            icon = "\uD83D\uDE80"
-        )
-    )
-
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            CenterAlignedTopAppBar(title = {
-                Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(id = R.string.logo),
-                    color = WhitePlain,
-                    style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center
-                )
-            })
-        },
-        floatingActionButton = {
-            FloatingActionButtonCustom(
-                modifier = Modifier
-                    .padding(end = 8.dp),
-                actionLogo = Icons.Rounded.Add
-            ) { isDialogOpen = !isDialogOpen }
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(vertical = 8.dp, horizontal = 16.dp)
-        ) {
-            items(items = classes, key = { it.id }) {
-                ClassCard(
-                    modifier = Modifier
-                        .padding(bottom = 8.dp),
-                    data = it,
-                    onClick = {
-                        navController.navigate(Screen.ClassScreen)
+    LaunchedEffect(key1 = true) {
+        vm.eventFlow.collect { event ->
+            when (event) {
+                is HomeScreenEvent.ShowToast -> {
+                    coroutineScope.launch {
+                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                     }
-                )
+                }
             }
         }
     }
 
-    if (isDialogOpen) {
+    Scaffold(
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            SmallTopAppBar(
+                scrollBehavior = scrollBehavior,
+
+                title = {
+                    Text(
+                        text = stringResource(id = R.string.logo_collapsed),
+                        color = WhitePlain,
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Start
+                    )
+                },
+                actions = {
+                    TextButton(onClick = {
+                        vm.onStateChange(state.copy(isDialogLogoutOpen = true))
+                    }) {
+                        Text(
+                            text = "\uD83D\uDCE4",
+                            style = TextStyle(
+                                fontSize = 24.sp,
+                                lineHeight = 24.sp,
+                                shadow = Shadow(
+                                    color = Color.Black,
+                                    offset = Offset(5.0f, 10.0f),
+                                    blurRadius = 3f
+                                )
+                            )
+                        )
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButtonCustom(
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .semantics { testTag = "ActionButtonAddClass" },
+                actionLogo = Icons.Rounded.Add,
+            ) { vm.onStateChange(state.copy(isDialogOpen = true)) }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pullRefresh(swipeRefreshState),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .padding(vertical = 8.dp, horizontal = 16.dp)
+            ) {
+                if (!vm.isGetClassesLoading && state.classes.isEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(id = R.string.there_is_no_classes),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = WhitePlaceholder
+                        )
+                    }
+                }
+                items(items = state.classes, key = { it.id }) {
+                    val classData = it
+                    ClassCard(
+                        modifier = Modifier
+                            .padding(bottom = 8.dp),
+                        data = it,
+                        onClick = {
+                            navController.navigate(
+                                "${Screen.ClassScreen}/${classData.id}/${classData.name}/${classData.maker}"
+                            )
+                        }
+                    )
+                }
+            }
+            PullRefreshIndicator(
+                refreshing = vm.isGetClassesLoading,
+                state = swipeRefreshState,
+                modifier = Modifier
+                    .padding(paddingValues)
+            )
+        }
+    }
+
+    if (state.isDialogLogoutOpen) {
         BasicAlertDialog(
-            onDismissRequest = { isDialogOpen = !isDialogOpen },
+            onDismissRequest = { vm.onStateChange(state.copy(isDialogLogoutOpen = false)) },
+        ) {
+            Column(
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(PurpleSurface)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    modifier = Modifier.padding(bottom = 2.dp),
+                    text = stringResource(id = R.string.logout_confirmation),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = WhitePlain
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            vm.onStateChange(state.copy(isDialogLogoutOpen = false))
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.button_text_cancel),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Button(
+                        modifier = Modifier
+                            .weight(1f),
+                        colors = ButtonDefaults.buttonColors().copy(containerColor = GreenCard),
+                        onClick = vm::logout
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.button_text_confirm),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (state.isDialogOpen) {
+        BasicAlertDialog(
+            onDismissRequest = { vm.onStateChange(state.copy(isDialogOpen = false)) },
         ) {
             Column(
                 modifier = Modifier
@@ -140,23 +254,32 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Button(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     onClick = {
-                        isDialogOpen = !isDialogOpen
-                        isDialogMakeRoomOpen = !isDialogMakeRoomOpen
-                    }
+                        vm.onStateChange(
+                            state.copy(
+                                isDialogOpen = false,
+                                isDialogMakeRoomOpen = true
+                            )
+                        )
+                    },
                 ) {
                     Text(
                         text = stringResource(id = R.string.make_room),
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
                 Spacer(modifier = Modifier.padding(4.dp))
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        isDialogOpen = !isDialogOpen
-                        isDialogJoinRoomOpen = !isDialogJoinRoomOpen
+                        vm.onStateChange(
+                            state.copy(
+                                isDialogOpen = false,
+                                isDialogJoinRoomOpen = true
+                            )
+                        )
                     }
                 ) {
                     Text(
@@ -168,9 +291,9 @@ fun HomeScreen(
         }
     }
 
-    if (isDialogJoinRoomOpen) {
+    if (state.isDialogJoinRoomOpen) {
         BasicAlertDialog(
-            onDismissRequest = { isDialogJoinRoomOpen = !isDialogJoinRoomOpen },
+            onDismissRequest = { vm.onStateChange(state.copy(isDialogJoinRoomOpen = false)) },
         ) {
             Column(
                 modifier = Modifier
@@ -189,13 +312,13 @@ fun HomeScreen(
                 CustomInput(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 16.dp),
                     hint = stringResource(id = R.string.class_code_placeholder),
-                    text = classCode,
+                    text = state.classCode,
                     textStyle = MaterialTheme.typography.labelLarge,
                     onChange = {
                         if (it.length <= 6) {
-                            classCode = it.uppercase(Locale.ROOT)
+                            vm.onStateChange(state.copy(classCode = it.uppercase(Locale.ROOT)))
                         }
                     },
                     keyboardOptions = KeyboardOptions(
@@ -210,7 +333,7 @@ fun HomeScreen(
                     CustomButton(
                         text = stringResource(id = R.string.button_text_confirm),
                         onClick = {
-                            isDialogJoinRoomOpen = !isDialogJoinRoomOpen
+                            vm.joinClass()
                         },
                     )
                 }
@@ -218,9 +341,9 @@ fun HomeScreen(
         }
     }
 
-    if (isDialogMakeRoomOpen) {
+    if (state.isDialogMakeRoomOpen) {
         BasicAlertDialog(
-            onDismissRequest = { isDialogMakeRoomOpen = !isDialogMakeRoomOpen },
+            onDismissRequest = { vm.onStateChange(state.copy(isDialogMakeRoomOpen = false)) },
         ) {
             Column(
                 modifier = Modifier
@@ -238,11 +361,14 @@ fun HomeScreen(
                 )
                 CustomInput(
                     modifier = Modifier
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 8.dp)
+                        .semantics {
+                            testTag = "InputLecturerName"
+                        },
                     hint = stringResource(id = R.string.lecturer_input_placeholder),
-                    text = classLecturer,
+                    text = state.classLecturer,
                     onChange = {
-                        classLecturer = it
+                        vm.onStateChange(state.copy(classLecturer = it))
                     },
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next
@@ -258,11 +384,14 @@ fun HomeScreen(
                 CustomInput(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 8.dp)
+                        .semantics {
+                            testTag = "InputClassName"
+                        },
                     hint = stringResource(id = R.string.class_name_placeholder),
-                    text = className,
+                    text = state.className,
                     onChange = {
-                        className = it
+                        vm.onStateChange(state.copy(className = it))
                     },
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next
@@ -276,12 +405,16 @@ fun HomeScreen(
                     color = WhitePlain
                 )
                 CustomTextArea(
-                    modifier = Modifier.padding(bottom = 8.dp),
+                    modifier = Modifier
+                        .padding(bottom = 8.dp)
+                        .semantics {
+                            testTag = "InputDescriptionClass"
+                        },
                     hint = stringResource(id = R.string.class_description_placeholder),
-                    text = classDescription,
+                    text = state.classDescription,
                     height = 100.dp,
                     onChange = {
-                        classDescription = it
+                        vm.onStateChange(state.copy(classDescription = it))
                     },
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next
@@ -304,11 +437,20 @@ fun HomeScreen(
                             color = WhitePlain
                         )
                         CustomInput(
+                            modifier = Modifier.semantics { testTag = "InputIconClass" },
                             hint = stringResource(id = R.string.class_icon_placeholder),
-                            text = classIcon,
+                            text = state.classIcon,
                             onChange = {
-                                if (it.length <= 3) {
-                                    classIcon = it
+                                if (it.isNotEmpty() && it.isNotBlank() && it.length < 3) {
+                                    val iconChar = it[0]
+                                    if (!Character.isLetterOrDigit(iconChar) && !Character.isWhitespace(
+                                            iconChar
+                                        )
+                                    ) {
+                                        vm.onStateChange(state.copy(classIcon = it))
+                                    }
+                                } else if (it.isEmpty()) {
+                                    vm.onStateChange(state.copy(classIcon = ""))
                                 }
                             },
                             keyboardOptions = KeyboardOptions(
@@ -320,7 +462,7 @@ fun HomeScreen(
                     CustomButton(
                         text = stringResource(id = R.string.button_text_confirm),
                         onClick = {
-                            isDialogMakeRoomOpen = !isDialogMakeRoomOpen
+                            vm.createMyClass()
                         },
                     )
                 }
