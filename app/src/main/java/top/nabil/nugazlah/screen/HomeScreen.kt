@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.semantics
@@ -76,6 +77,7 @@ import top.nabil.nugazlah.ui.theme.PurpleSurface
 import top.nabil.nugazlah.ui.theme.WhitePlain
 import java.util.Locale
 import top.nabil.nugazlah.ui.theme.WhitePlaceholder
+import top.nabil.nugazlah.util.ValidationError
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
@@ -144,7 +146,7 @@ fun HomeScreen(
             FloatingActionButtonCustom(
                 modifier = Modifier
                     .padding(end = 8.dp)
-                    .semantics { testTag = "ActionButtonAddClass" },
+                    .testTag("ActionButtonAddClass"),
                 actionLogo = Icons.Rounded.Add,
             ) { vm.onStateChange(state.copy(isDialogOpen = true)) }
         }
@@ -179,7 +181,8 @@ fun HomeScreen(
                             navController.navigate(
                                 "${Screen.ClassScreen}/${classData.id}/${classData.name}/${classData.maker}"
                             )
-                        }
+                        },
+                        testTagSemantic = if (it.name == "Lorem ipsum") "ClassCardTag" else ""
                     )
                 }
             }
@@ -230,7 +233,9 @@ fun HomeScreen(
                         modifier = Modifier
                             .weight(1f),
                         colors = ButtonDefaults.buttonColors().copy(containerColor = GreenCard),
-                        onClick = vm::logout
+                        onClick = {
+                            vm.logout(context)
+                        }
                     ) {
                         Text(
                             text = stringResource(id = R.string.button_text_confirm),
@@ -333,7 +338,11 @@ fun HomeScreen(
                     CustomButton(
                         text = stringResource(id = R.string.button_text_confirm),
                         onClick = {
-                            vm.joinClass()
+                            try {
+                                vm.joinClass()
+                            } catch (e: ValidationError) {
+                                return@CustomButton
+                            }
                         },
                     )
                 }
@@ -361,10 +370,8 @@ fun HomeScreen(
                 )
                 CustomInput(
                     modifier = Modifier
-                        .padding(bottom = 8.dp)
-                        .semantics {
-                            testTag = "InputLecturerName"
-                        },
+                        .padding(bottom = 8.dp),
+                    testTagSemantic = "InputLecturerName",
                     hint = stringResource(id = R.string.lecturer_input_placeholder),
                     text = state.classLecturer,
                     onChange = {
@@ -384,12 +391,10 @@ fun HomeScreen(
                 CustomInput(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                        .semantics {
-                            testTag = "InputClassName"
-                        },
+                        .padding(bottom = 8.dp),
                     hint = stringResource(id = R.string.class_name_placeholder),
                     text = state.className,
+                    testTagSemantic = "InputClassName",
                     onChange = {
                         vm.onStateChange(state.copy(className = it))
                     },
@@ -406,10 +411,8 @@ fun HomeScreen(
                 )
                 CustomTextArea(
                     modifier = Modifier
-                        .padding(bottom = 8.dp)
-                        .semantics {
-                            testTag = "InputDescriptionClass"
-                        },
+                        .padding(bottom = 8.dp),
+                    testTagSemantic = "InputDescriptionClass",
                     hint = stringResource(id = R.string.class_description_placeholder),
                     text = state.classDescription,
                     height = 100.dp,
@@ -437,7 +440,7 @@ fun HomeScreen(
                             color = WhitePlain
                         )
                         CustomInput(
-                            modifier = Modifier.semantics { testTag = "InputIconClass" },
+                            testTagSemantic = "InputIconClass",
                             hint = stringResource(id = R.string.class_icon_placeholder),
                             text = state.classIcon,
                             onChange = {
@@ -462,7 +465,11 @@ fun HomeScreen(
                     CustomButton(
                         text = stringResource(id = R.string.button_text_confirm),
                         onClick = {
-                            vm.createMyClass()
+                            try {
+                                vm.createMyClass()
+                            } catch (e: ValidationError) {
+                                return@CustomButton
+                            }
                         },
                     )
                 }

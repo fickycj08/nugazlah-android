@@ -9,6 +9,9 @@ data class Task(
     var id: Int = 0,
     var taskId: String,
     var classId: String,
+    var title: String,
+    var description: String,
+    var deadline: String,
     var isAlarmRegistered: Boolean,
     var isTaskDone: Boolean = false,
 )

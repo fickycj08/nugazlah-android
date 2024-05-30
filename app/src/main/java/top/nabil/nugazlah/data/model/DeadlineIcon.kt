@@ -28,12 +28,12 @@ fun determineDeadlineType(deadlineStr: String): DeadlineType {
     val deadline = LocalDateTime.parse(deadlineStr, isoFormatter).atZone(ZoneId.of("Asia/Jakarta"))
         .withZoneSameInstant(ZoneId.of("Asia/Jakarta")).toLocalDateTime()
     val now = LocalDateTime.now(ZoneId.of("Asia/Jakarta"))
-    val hoursUntilDeadline = ChronoUnit.HOURS.between(now, deadline)
+    val secondsUntilDeadline = ChronoUnit.SECONDS.between(now, deadline)
     return when {
-        hoursUntilDeadline > 7 * 24 -> DeadlineType.SANS
-        hoursUntilDeadline in 1 * 24..7 * 24 -> DeadlineType.WARN
-        hoursUntilDeadline in 1..<1 * 24 -> DeadlineType.NINUNINU
-        hoursUntilDeadline < 0 -> DeadlineType.MISSED
+        secondsUntilDeadline > 7 * 24 * 3600 -> DeadlineType.SANS
+        secondsUntilDeadline in 1 * 24 * 3600..7 * 24 * 3600 -> DeadlineType.WARN
+        secondsUntilDeadline in 1..<1 * 24 * 3600 -> DeadlineType.NINUNINU
+        secondsUntilDeadline < 0 -> DeadlineType.MISSED
         else -> DeadlineType.UNKNOWN
     }
 }

@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,7 @@ fun TaskCard(
     deadlineColor: Color,
     onClick: () -> Unit = {},
     onDismissRequest: () -> Unit,
+    testTagSemantic: String = ""
 ) {
     Column(
         modifier = modifier
@@ -51,7 +53,8 @@ fun TaskCard(
             .clickable {
                 onClick()
             }
-            .padding(8.dp),
+            .padding(8.dp)
+            .testTag(testTagSemantic),
         horizontalAlignment = Alignment.End
     ) {
         Row {

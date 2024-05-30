@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -54,6 +56,7 @@ fun CustomInput(
     textStyle: TextStyle = TextStyle(color = Color.Black),
     onChange: (String) -> Unit = {},
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    testTagSemantic: String = "",
 ) {
     var isHintDisplayed by remember {
         mutableStateOf(hint != "")
@@ -71,6 +74,9 @@ fun CustomInput(
                     .padding(horizontal = 20.dp, vertical = 12.dp)
                     .onFocusChanged {
                         isHintDisplayed = !it.isFocused
+                    }
+                    .semantics {
+                        testTag = testTagSemantic
                     },
                 value = text,
                 maxLines = 1,

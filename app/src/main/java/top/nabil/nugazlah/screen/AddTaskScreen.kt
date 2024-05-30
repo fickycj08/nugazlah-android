@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -67,6 +68,7 @@ import top.nabil.nugazlah.ui.theme.PurpleType
 import top.nabil.nugazlah.ui.theme.WhitePlaceholder
 import top.nabil.nugazlah.ui.theme.WhitePlain
 import top.nabil.nugazlah.util.ParseTime
+import top.nabil.nugazlah.util.ValidationError
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
@@ -138,7 +140,8 @@ fun AddTaskScreen(
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Next
                 ),
-                onChange = { vm.onStateChange(state.copy(title = it)) }
+                onChange = { vm.onStateChange(state.copy(title = it)) },
+                testTagSemantic = "InputTitleTaskTag"
             )
 
             Spacer(
@@ -159,6 +162,7 @@ fun AddTaskScreen(
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Next
                 ),
+                testTagSemantic = "InputDescriptionTaskTag"
             )
 
             Spacer(
@@ -180,6 +184,7 @@ fun AddTaskScreen(
                     imeAction = ImeAction.Next
                 ),
                 onChange = { vm.onStateChange(state.copy(taskDetail = it)) },
+                testTagSemantic = "InputDetailTaskTag"
             )
 
             Spacer(
@@ -201,6 +206,7 @@ fun AddTaskScreen(
                     imeAction = ImeAction.Next
                 ),
                 onChange = { vm.onStateChange(state.copy(taskSubmission = it)) },
+                testTagSemantic = "InputSubmissionTaskTag"
             )
 
             Spacer(
@@ -257,7 +263,8 @@ fun AddTaskScreen(
                     .clickable {
                         vm.onStateChange(state.copy(isDatePickerDialogOpen = true))
                     }
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .testTag("InputDateTaskTag"),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (state.deadline == "") {
@@ -307,7 +314,13 @@ fun AddTaskScreen(
                         fontFamily = Inter,
                         color = PurpleType
                     ),
-                    onClick = vm::createTask
+                    onClick = {
+                        try {
+                            vm.createTask()
+                        } catch (e: ValidationError) {
+                            return@CustomButton
+                        }
+                    }
                 )
             }
         }
@@ -417,6 +430,7 @@ fun AddTaskScreen(
             )
         }
     }
+
     if (state.isTimePickerDialogOpen) {
         TimePickerDialog(
             onDismissRequest = {

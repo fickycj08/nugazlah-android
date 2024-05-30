@@ -1,5 +1,8 @@
 package top.nabil.nugazlah.screen
 
+import android.content.Context
+import android.content.Intent
+import android.util.Patterns
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -12,11 +15,13 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import top.nabil.nugazlah.MainActivity
 import top.nabil.nugazlah.data.local.Token
 import top.nabil.nugazlah.data.remote.request.LoginRequest
 import top.nabil.nugazlah.data.remote.request.RegisterRequest
 import top.nabil.nugazlah.repository.AuthRepository
 import top.nabil.nugazlah.util.Resource
+import top.nabil.nugazlah.util.ValidationError
 
 data class LoginScreenState(
     val isLogin: Boolean = false,
@@ -69,9 +74,27 @@ class LoginViewModel(
         }
     }
 
-    fun login() {
-        validateLoginInput()
+    fun login(context: Context) {
         val value = _state.value
+        if (value.loginEmail.isEmpty()) {
+            viewModelScope.launch {
+                _eventFlow.emit(LoginScreenEvent.ShowToast("Email tidak boleh kosong"))
+            }
+            throw ValidationError("Email tidak boleh kosong")
+        }
+        if (!Patterns.EMAIL_ADDRESS.matcher(value.loginEmail).matches()) {
+            viewModelScope.launch {
+                _eventFlow.emit(LoginScreenEvent.ShowToast("Email harus berformat email"))
+            }
+            throw ValidationError("Email harus berformat email")
+        }
+        if (value.loginPassword.length < 8) {
+            viewModelScope.launch {
+                _eventFlow.emit(LoginScreenEvent.ShowToast("Password minimal 8 huruf"))
+            }
+            throw ValidationError("Password minimal 8 huruf")
+        }
+
         viewModelScope.launch {
             isLoading()
             val response =
@@ -85,13 +108,13 @@ class LoginViewModel(
                             userId = responseData?.data?.userId ?: ""
                         )
                     )
-                    _state.update { it.copy(isLogin = false) }
                     _eventFlow.emit(LoginScreenEvent.ShowToast("Login success"))
-                    navController.navigate(Screen.HomeScreen) {
-                        popUpTo(Screen.LoginScreen) { inclusive = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+
+                    val intent = Intent(context, MainActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    context.startActivity(intent)
+                    // TEST_VAR
+                    Runtime.getRuntime().exit(0)
                 }
 
                 is Resource.Error -> {
@@ -102,8 +125,33 @@ class LoginViewModel(
         }
     }
 
-    fun register() {
+    fun register(context: Context) {
         val value = _state.value
+        if (value.registerFullName.isEmpty()) {
+            viewModelScope.launch {
+                _eventFlow.emit(LoginScreenEvent.ShowToast("Nama tidak boleh kosong"))
+            }
+            throw ValidationError("Nama tidak boleh kosong")
+        }
+        if (value.registerEmail.isEmpty()) {
+            viewModelScope.launch {
+                _eventFlow.emit(LoginScreenEvent.ShowToast("Email tidak boleh kosong"))
+            }
+            throw ValidationError("Email tidak boleh kosong")
+        }
+        if (!Patterns.EMAIL_ADDRESS.matcher(value.registerEmail).matches()) {
+            viewModelScope.launch {
+                _eventFlow.emit(LoginScreenEvent.ShowToast("Email harus berformat email"))
+            }
+            throw ValidationError("Email harus berformat email")
+        }
+        if (value.registerPassword.length < 8) {
+            viewModelScope.launch {
+                _eventFlow.emit(LoginScreenEvent.ShowToast("Password minimal 8 huruf"))
+            }
+            throw ValidationError("Password minimal 8 huruf")
+        }
+
         viewModelScope.launch {
             isLoading()
             val response =
@@ -124,7 +172,12 @@ class LoginViewModel(
                         )
                     )
                     _eventFlow.emit(LoginScreenEvent.ShowToast("Register success"))
-                    navController.navigate(Screen.HomeScreen)
+
+                    val intent = Intent(context, MainActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    context.startActivity(intent)
+                    // TEST_VAR
+                    Runtime.getRuntime().exit(0)
                 }
 
                 is Resource.Error -> {
@@ -133,14 +186,6 @@ class LoginViewModel(
             }
             isNotLoading()
         }
-    }
-
-    private fun validateLoginInput() {
-        // TODO implement it
-    }
-
-    private fun validateRegisterInput() {
-        // TODO implement it
     }
 
     private fun isLoading() {

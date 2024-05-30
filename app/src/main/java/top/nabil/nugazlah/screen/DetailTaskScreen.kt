@@ -1,5 +1,8 @@
 package top.nabil.nugazlah.screen
 
+import android.content.Intent
+import android.net.Uri
+import android.webkit.URLUtil
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import top.nabil.nugazlah.R
@@ -186,16 +190,34 @@ fun DetailTaskScreen(
                     text = stringResource(id = R.string.task_source),
                     style = MaterialTheme.typography.labelMedium
                 )
-                Box(
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(GreenCard, MaterialTheme.shapes.small)
-                        .padding(vertical = 8.dp, horizontal = 16.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.task_source_wording),
-                        style = MaterialTheme.typography.labelLarge
+                if (URLUtil.isValidUrl(state.taskDetail)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(GreenCard, MaterialTheme.shapes.small)
+                            .clickable {
+                                val browserIntent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(state.taskDetail)
+                                )
+                                ContextCompat.startActivity(context, browserIntent, null)
+                            }
+                            .padding(vertical = 8.dp, horizontal = 16.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.task_source_wording),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                } else {
+                    TextBox(
+                        text = state.taskDetail,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 16.sp,
+                            lineHeight = 18.sp,
+                            letterSpacing = 0.1.sp
+                        )
                     )
                 }
 
@@ -210,18 +232,37 @@ fun DetailTaskScreen(
                     text = stringResource(id = R.string.task_submission),
                     style = MaterialTheme.typography.labelMedium
                 )
-                Box(
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(GreenCard, MaterialTheme.shapes.small)
-                        .padding(vertical = 8.dp, horizontal = 16.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.task_submission_wording),
-                        style = MaterialTheme.typography.labelLarge
+                if (URLUtil.isValidUrl(state.taskDetail)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(GreenCard, MaterialTheme.shapes.small)
+                            .padding(vertical = 8.dp, horizontal = 16.dp)
+                            .clickable {
+                                val browserIntent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(state.taskSubmission)
+                                )
+                                ContextCompat.startActivity(context, browserIntent, null)
+                            },
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.task_submission_wording),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                } else {
+                    TextBox(
+                        text = state.taskSubmission,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 16.sp,
+                            lineHeight = 18.sp,
+                            letterSpacing = 0.1.sp
+                        )
                     )
                 }
+
                 Spacer(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -9,8 +9,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
@@ -41,7 +39,17 @@ import top.nabil.nugazlah.util.Resource
 import top.nabil.nugazlah.util.vmFactoryHelper
 import android.Manifest
 import android.content.pm.PackageManager
+import android.widget.Toast
+import kotlinx.coroutines.flow.update
+import top.nabil.nugazlah.alarm.AlarmData
 import top.nabil.nugazlah.alarm.Scheduler
+import top.nabil.nugazlah.data.remote.response.ResponseGetDetailTask
+import top.nabil.nugazlah.data.remote.response.ResponseGetDetailTaskData
+import top.nabil.nugazlah.screen.AlarmScreen
+import top.nabil.nugazlah.screen.TaskDetailScreenEvent
+import top.nabil.nugazlah.screen.TaskDetailState
+import top.nabil.nugazlah.screen.toTaskDetailState
+import top.nabil.nugazlah.util.ParseTime
 
 class MainActivity : ComponentActivity() {
     private lateinit var permissionsLauncher: ActivityResultLauncher<String>
@@ -74,22 +82,22 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val scheduler by lazy { Scheduler(this) }
             val nugazlahDatabase by lazy { NugazlahDatabase.getInstance(this) }
+            val nugazlahApi by lazy { ServerConnect.getInstance() }
             val authorizedNugazlahApi by lazy {
                 val token = runBlocking {
                     nugazlahDatabase.tokenDao().get()
                 }
-                var tok = ""
-                if (token != null) {
-                    tok = token.token
-                }
+                val tok = if (token != null) token.token else ""
+
                 ServerConnect.getAuthorizedInstance(tok)
             }
 
-            val nugazlahApi by lazy { ServerConnect.getInstance() }
-            val authRepository =
-                AuthRepository(nugazlahApi, nugazlahDatabase.tokenDao())
+            val authRepository = AuthRepository(nugazlahApi, nugazlahDatabase.tokenDao())
+            val taskRepository = TaskRepository(authorizedNugazlahApi, nugazlahDatabase.taskDao())
 
-            val startDestination = when (val result = runBlocking { authRepository.isLoggedIn() }) {
+            var isOpenFromAlarm = false
+            var taskIdFromAlarm = ""
+            var startDestination = when (val result = runBlocking { authRepository.isLoggedIn() }) {
                 is Resource.Success -> {
                     if (result.data!!) {
                         Screen.HomeScreen
@@ -101,6 +109,18 @@ class MainActivity : ComponentActivity() {
                 is Resource.Error -> {
                     Screen.LoginScreen
                 }
+            }
+
+            if ((intent.getStringExtra("for") ?: "") == "detailTask") {
+                taskIdFromAlarm = intent.getStringExtra("taskId")!!
+                isOpenFromAlarm = true
+                startDestination = "${Screen.DetailTaskScreen}/$taskId"
+            }
+
+            if ((intent.getStringExtra("for") ?: "") == "alarmTask") {
+                taskIdFromAlarm = intent.getStringExtra("taskId")!!
+                isOpenFromAlarm = true
+                startDestination = "${Screen.AlarmScreen}/$taskIdFromAlarm"
             }
 
             NugazlahTheme(
@@ -146,7 +166,7 @@ class MainActivity : ComponentActivity() {
                             val classMakerId = remember {
                                 it.arguments?.getString("classMakerId")
                             }
-                            val taskRepository = TaskRepository(authorizedNugazlahApi)
+
                             val classViewModel = viewModel<ClassViewModel>(
                                 factory = vmFactoryHelper {
                                     ClassViewModel(
@@ -165,11 +185,13 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(route = "${Screen.DetailTaskScreen}/{taskId}") {
-                            val taskId = remember {
+                            var taskId = remember {
                                 it.arguments?.getString("taskId")
                             }
+                            if (isOpenFromAlarm) {
+                                taskId = taskIdFromAlarm
+                            }
 
-                            val taskRepository = TaskRepository(authorizedNugazlahApi)
                             val taskDetailViewModel = viewModel<TaskDetailViewModel>(
                                 factory = vmFactoryHelper {
                                     TaskDetailViewModel(
@@ -189,11 +211,6 @@ class MainActivity : ComponentActivity() {
                                 it.arguments?.getString("classId")
                             }
 
-                            val token = runBlocking {
-                                nugazlahDatabase.tokenDao().get()
-                            }
-
-                            val taskRepository = TaskRepository(authorizedNugazlahApi)
                             val addTaskViewModel = viewModel<AddTaskViewModel>(
                                 factory = vmFactoryHelper {
                                     AddTaskViewModel(
@@ -206,6 +223,46 @@ class MainActivity : ComponentActivity() {
                             AddTaskScreen(
                                 navController = navController,
                                 vm = addTaskViewModel
+                            )
+                        }
+                        composable(route = "${Screen.AlarmScreen}/{taskId}") {
+                            var taskId = remember {
+                                it.arguments?.getString("taskId")
+                            }
+
+                            if (isOpenFromAlarm) {
+                                taskId = taskIdFromAlarm
+                            }
+
+                            lateinit var task: ResponseGetDetailTaskData
+
+                            runBlocking {
+                                val result = taskRepository.getTaskDetail(taskId ?: "")
+                                when (result) {
+                                    is Resource.Success -> {
+                                        task = result.data!!
+                                    }
+
+                                    is Resource.Error -> {
+                                        Toast.makeText(
+                                            applicationContext,
+                                            "Gagal mengambil data tugas",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            }
+
+                            AlarmScreen(
+                                navController = navController,
+                                data = AlarmData(
+                                    id = 1,
+                                    taskId = task.id,
+                                    subject = "",
+                                    title = task.title,
+                                    description = task.description,
+                                    deadline = ParseTime.iso8601ToReadable(task.deadline)
+                                )
                             )
                         }
                     }

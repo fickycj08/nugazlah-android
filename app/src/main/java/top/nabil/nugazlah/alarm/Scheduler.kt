@@ -1,27 +1,19 @@
 package top.nabil.nugazlah.alarm
 
-import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 class Scheduler(
     private val context: Context
 ) {
     private val alarmManager = context.getSystemService(AlarmManager::class.java)
 
-    // TODO alarm scheduled only when user receive the task, make it realtime with websocket
-    @SuppressLint("ScheduleExactAlarm")
+    // TODO alarm scheduled only when user receive the task, make it realtime with websocket or workmanager
     fun schedule(data: AlarmData, triggerAt: Long) {
-        val intent = Intent(context, AlarmNotifReceiver::class.java).apply {
-            putExtra("ID", data.id)
+        val intent = Intent(context, AlarmNotificationReceiver::class.java).apply {
+            putExtra("ID", data.taskId)
             putExtra("SUBJECT", data.subject)
             putExtra("TITLE", data.title)
             putExtra("DESCRIPTION", data.description)
@@ -34,22 +26,36 @@ class Scheduler(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerAt,
-            pendingIntent
-        )
+        val currentTimeMillis = System.currentTimeMillis()
+
+        if (triggerAt > currentTimeMillis) {
+            alarmManager.set(
+                AlarmManager.RTC_WAKEUP,
+                triggerAt,
+                pendingIntent
+            )
+        }
     }
 
+    fun scheduleActivity(data: AlarmData, triggerAt: Long) {
+        val intent = Intent(context, AlarmActivityReceiver::class.java).apply {
+            putExtra("ID", data.taskId)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            data.id,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
-    private fun parseDateTime(dateString: String, timeString: String): LocalDateTime {
-        val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault())
-        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+        val currentTimeMillis = System.currentTimeMillis()
 
-        val localDate = dateFormatter.parse(dateString, LocalDate::from)
-
-        val localTime = LocalTime.parse(timeString, timeFormatter)
-
-        return LocalDateTime.of(localDate, localTime)
+        if (triggerAt > currentTimeMillis) {
+            alarmManager.set(
+                AlarmManager.RTC_WAKEUP,
+                triggerAt,
+                pendingIntent
+            )
+        }
     }
 }

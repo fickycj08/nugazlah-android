@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import retrofit2.HttpException
 import top.nabil.nugazlah.data.local.Task
 import top.nabil.nugazlah.data.local.TaskDao
+import top.nabil.nugazlah.data.local.Token
 import top.nabil.nugazlah.data.remote.AuthorizedNugazlahApi
 import top.nabil.nugazlah.data.remote.request.RequestCreateClass
 import top.nabil.nugazlah.data.remote.request.RequestCreateTask
@@ -20,7 +21,7 @@ import top.nabil.nugazlah.util.parseErrorResponse
 
 class TaskRepository(
     private val authorizedNugazlahApi: AuthorizedNugazlahApi,
-//    private val taskDao: TaskDao
+    private val taskDao: TaskDao
 ) {
     suspend fun getTaskDetail(taskID: String): Resource<ResponseGetDetailTaskData> {
         return try {
@@ -144,7 +145,17 @@ class TaskRepository(
         }
     }
 
-//    suspend fun getRegisteredTaskAlarm(classId: String): Flow<List<Task>> {
-//        return this.taskDao.getByClassId(classId)
-//    }
+    suspend fun getRegisteredTaskAlarm(classId: String): List<Task> {
+        return this.taskDao.getByClassId(classId)
+    }
+
+    suspend fun insertTasksToLocal(tasks: List<Task>): Resource<String> {
+        return try {
+            this.taskDao.batchInsert(tasks)
+            Resource.Success("")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Resource.Error(ErrorMessage.applicationError)
+        }
+    }
 }

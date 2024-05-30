@@ -27,6 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -97,7 +98,8 @@ fun ClassScreen(
             if (state.isClassMaker) {
                 FloatingActionButtonCustom(
                     modifier = Modifier
-                        .padding(end = 8.dp),
+                        .padding(end = 8.dp)
+                        .testTag("ActionButtonAddTask"),
                     actionLogo = Icons.Rounded.Add
                 ) { navController.navigate("${Screen.AddTaskScreen}/${state.classId}") }
             }
@@ -115,7 +117,6 @@ fun ClassScreen(
                     .padding(vertical = 8.dp, horizontal = 16.dp)
             ) {
                 if (!vm.isGetTasksLoading && state.tasks.isEmpty()) {
-                    // TODO make this nicer
                     item {
                         Text(
                             text = stringResource(id = R.string.there_is_no_taks),
@@ -136,7 +137,8 @@ fun ClassScreen(
                         },
                         onDismissRequest = {
                             vm.onStateChange(state.copy(isTutorialDialogOpen = true))
-                        }
+                        },
+                        testTagSemantic = if (it.title == "Lorem ipsum dolor") "TaskCardTag" else ""
                     )
                 }
             }

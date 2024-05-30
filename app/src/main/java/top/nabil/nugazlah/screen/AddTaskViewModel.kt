@@ -21,6 +21,7 @@ import top.nabil.nugazlah.repository.TaskRepository
 import top.nabil.nugazlah.ui.theme.BlackPlaceholder
 import top.nabil.nugazlah.util.ParseTime
 import top.nabil.nugazlah.util.Resource
+import top.nabil.nugazlah.util.ValidationError
 
 data class AddTaskScreenState(
     val title: String = "",
@@ -83,6 +84,38 @@ class AddTaskViewModel(
 
     fun createTask() {
         val vm = this
+        val value = _state.value
+        if (value.title.length < 3) {
+            viewModelScope.launch {
+                _eventFlow.emit(AddTaskScreenEvent.ShowToast("Judul tugas minimal 3 huruf"))
+            }
+            throw ValidationError("Judul tugas minimal 3 huruf")
+        }
+        if (value.taskDetail.length < 3) {
+            viewModelScope.launch {
+                _eventFlow.emit(AddTaskScreenEvent.ShowToast("Detail tugas minimal 3 huruf"))
+            }
+            throw ValidationError("Detail tugas minimal 3 huruf")
+        }
+        if (value.description.length < 10) {
+            viewModelScope.launch {
+                _eventFlow.emit(AddTaskScreenEvent.ShowToast("Deskripsi tugas minimal 10 huruf"))
+            }
+            throw ValidationError("Deskripsi tugas minimal 10 huruf")
+        }
+        if (value.taskSubmission.length < 3) {
+            viewModelScope.launch {
+                _eventFlow.emit(AddTaskScreenEvent.ShowToast("Pengumpulan tugas minimal 3 huruf"))
+            }
+            throw ValidationError("Pengumpulan tugas minimal 3 huruf")
+        }
+        if (value.deadline.isEmpty()) {
+            viewModelScope.launch {
+                _eventFlow.emit(AddTaskScreenEvent.ShowToast("Deadline tugas tidak boleh kosong"))
+            }
+            throw ValidationError("Deadline tugas tidak boleh kosong")
+        }
+
         viewModelScope.launch {
             isCreateTaskLoading = true
             when (val result =

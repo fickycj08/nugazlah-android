@@ -20,6 +20,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -39,6 +41,7 @@ fun CustomTextArea(
     height: Dp = 200.dp,
     onChange: (String) -> Unit = {},
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    testTagSemantic: String = ""
 ) {
     var isHintDisplayed by remember {
         mutableStateOf(hint != "")
@@ -55,6 +58,9 @@ fun CustomTextArea(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
                 .onFocusChanged {
                     isHintDisplayed = !it.isFocused
+                }
+                .semantics {
+                    testTag = testTagSemantic
                 },
             value = text,
             enabled = isEnable,

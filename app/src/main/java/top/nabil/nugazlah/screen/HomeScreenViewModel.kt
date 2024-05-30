@@ -1,9 +1,13 @@
 package top.nabil.nugazlah.screen
 
+import android.content.Context
+import android.content.Intent
+import android.util.Patterns
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -13,11 +17,13 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import top.nabil.nugazlah.MainActivity
 import top.nabil.nugazlah.data.remote.request.RequestCreateClass
 import top.nabil.nugazlah.data.remote.response.ResponseGetMyClassesData
 import top.nabil.nugazlah.repository.AuthRepository
 import top.nabil.nugazlah.repository.ClassRepository
 import top.nabil.nugazlah.util.Resource
+import top.nabil.nugazlah.util.ValidationError
 
 data class ClassData(
     val id: String,
@@ -99,6 +105,31 @@ class HomeViewModel(
     fun createMyClass() {
         val vm = this
         val value = _state.value
+        if (value.className.length < 3) {
+            viewModelScope.launch {
+                _eventFlow.emit(HomeScreenEvent.ShowToast("Nama kelas minimal 3 huruf"))
+            }
+            throw ValidationError("Nama kelas minimal 3 huruf")
+        }
+        if (value.classLecturer.length < 3) {
+            viewModelScope.launch {
+                _eventFlow.emit(HomeScreenEvent.ShowToast("Nama dosen minimal 3 huruf"))
+            }
+            throw ValidationError("Nama dosen minimal 3 huruf")
+        }
+        if (value.classDescription.length < 10) {
+            viewModelScope.launch {
+                _eventFlow.emit(HomeScreenEvent.ShowToast("Deskripsi minimal 10 huruf"))
+            }
+            throw ValidationError("Deskripsi minimal 10 huruf")
+        }
+        if (value.classIcon.isEmpty()) {
+            viewModelScope.launch {
+                _eventFlow.emit(HomeScreenEvent.ShowToast("Ikon kelas wajib diisi"))
+            }
+            throw ValidationError("Ikon kelas wajib diisi")
+        }
+
         viewModelScope.launch {
             isGetClassesLoading = true
             when (val result = vm.classRepository.createClass(
@@ -134,6 +165,13 @@ class HomeViewModel(
     fun joinClass() {
         val vm = this
         val value = _state.value
+        if (value.classCode.length < 6) {
+            viewModelScope.launch {
+                _eventFlow.emit(HomeScreenEvent.ShowToast("Kode kelas minimal 6 huruf"))
+            }
+            throw ValidationError("Kode kelas minimal 6 huruf")
+        }
+
         viewModelScope.launch {
             isGetClassesLoading = true
             when (val result = vm.classRepository.joinClass(value.classCode)) {
@@ -156,15 +194,15 @@ class HomeViewModel(
         }
     }
 
-    fun logout() {
+    fun logout(context: Context) {
         viewModelScope.launch {
             _state.update { it.copy(isDialogLogoutOpen = false) }
             authRepository.logout()
-            navController.navigate(Screen.LoginScreen) {
-                popUpTo(Screen.HomeScreen) { inclusive = true }
-                launchSingleTop = true
-                restoreState = true
-            }
+            val intent = Intent(context, MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            context.startActivity(intent)
+            // TEST_VAR
+            Runtime.getRuntime().exit(0)
         }
     }
 

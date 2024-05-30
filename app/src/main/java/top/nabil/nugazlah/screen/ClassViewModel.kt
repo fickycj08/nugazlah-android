@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import top.nabil.nugazlah.alarm.AlarmData
 import top.nabil.nugazlah.alarm.Scheduler
+import top.nabil.nugazlah.data.local.Task
 import top.nabil.nugazlah.data.model.deadlineColor
 import top.nabil.nugazlah.data.model.deadlineIcon
 import top.nabil.nugazlah.data.model.determineDeadlineType
@@ -24,6 +26,8 @@ import top.nabil.nugazlah.ui.theme.BlackPlaceholder
 import top.nabil.nugazlah.ui.theme.GreenDone
 import top.nabil.nugazlah.util.ParseTime
 import top.nabil.nugazlah.util.Resource
+import java.util.UUID
+import kotlin.random.Random
 
 data class TaskData(
     val id: String,
@@ -66,8 +70,8 @@ sealed class ClassScreenEvent {
 }
 
 class ClassViewModel(
-    className: String,
-    classId: String,
+    private val className: String,
+    private val classId: String,
     private val classMaker: String,
     private val taskRepository: TaskRepository,
     private val authRepository: AuthRepository,
@@ -114,11 +118,8 @@ class ClassViewModel(
             when (val result = vm.taskRepository.getMyTasks(_state.value.classId)) {
                 is Resource.Success -> {
                     // get data from local
-                    // taskRepository.getRegisteredTaskAlarm(classId).collect {}
-                    // check if the task is already registered
-                    // if not schedule the alarm
-                    // parseDateTime(data.dueDate, data.dueDateTime).atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
-                    // scheduler.schedule()
+                    val registeredTask = taskRepository.getRegisteredTaskAlarm(classId)
+                    val unregisteredTask = mutableListOf<Task>()
 
                     _state.update {
                         it.copy(tasks = result.data
@@ -129,19 +130,72 @@ class ClassViewModel(
                                 data.isDone
                             }
                             ?.map { newData ->
+                                val deadlineType = determineDeadlineType(newData.deadline)
                                 newData.toTaskData(
-                                    deadlineIcon = if (newData.isDone) "✅" else deadlineIcon[determineDeadlineType(
-                                        newData.deadline
-                                    )] ?: "❔",
+                                    deadlineIcon = if (newData.isDone) "✅" else deadlineIcon[deadlineType]
+                                        ?: "❔",
                                     taskTypeIcon = taskTypeIcon[newData.taskType] ?: "❔",
-                                    deadlineColor = if (newData.isDone) GreenDone else deadlineColor[determineDeadlineType(
-                                        newData.deadline
-                                    )]
+                                    deadlineColor = if (newData.isDone) GreenDone else deadlineColor[deadlineType]
                                         ?: BlackPlaceholder,
                                 )
                             }
                             ?: emptyList())
                     }
+
+                    result.data?.forEach { response ->
+                        val isPresent = registeredTask.any {
+                            it.taskId == response.id
+                        }
+                        if (!isPresent && !response.isDone) {
+                            unregisteredTask.add(
+                                Task(
+                                    taskId = response.id,
+                                    classId = classId,
+                                    isTaskDone = false,
+                                    isAlarmRegistered = true,
+                                    description = response.description,
+                                    title = response.title,
+                                    deadline = response.deadline
+                                )
+                            )
+                        }
+                    }
+
+                    // register alarm
+                    // TODO think about the repetition
+                    unregisteredTask.forEachIndexed { index, task ->
+                        val alarmId = Random.nextInt()
+                        ParseTime.scheduleAlarms(task.deadline).forEach { alarm ->
+                            // TEST_VAR
+                            if (index != unregisteredTask.lastIndex) {
+                                scheduler.schedule(
+                                    AlarmData(
+                                        id = alarmId,
+                                        taskId = task.taskId,
+                                        subject = className,
+                                        title = task.title,
+                                        deadline = ParseTime.iso8601ToReadable(task.deadline),
+                                        description = task.description
+                                    ),
+                                    alarm
+                                )
+                            } else {
+                                scheduler.scheduleActivity(
+                                    AlarmData(
+                                        id = alarmId,
+                                        taskId = task.taskId,
+                                        subject = className,
+                                        title = task.title,
+                                        deadline = ParseTime.iso8601ToReadable(task.deadline),
+                                        description = task.description
+                                    ),
+                                    alarm
+                                )
+                            }
+                        }
+                        task.id = alarmId
+                    }
+                    taskRepository.insertTasksToLocal(unregisteredTask)
                 }
 
                 is Resource.Error -> {

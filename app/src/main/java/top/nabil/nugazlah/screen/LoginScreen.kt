@@ -44,6 +44,7 @@ import top.nabil.nugazlah.ui.theme.JetbrainsMono
 import top.nabil.nugazlah.ui.theme.PurpleSurface
 import top.nabil.nugazlah.ui.theme.WhitePlain
 import top.nabil.nugazlah.ui.theme.WhiteTypo
+import top.nabil.nugazlah.util.ValidationError
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -223,7 +224,11 @@ fun LoginScreen(
                         isLoading = vm.isLoading,
                         text = stringResource(id = R.string.button_text_confirm),
                         onClick = {
-                            vm.login()
+                            try {
+                                vm.login(context)
+                            } catch (e: ValidationError) {
+                                return@CustomButton
+                            }
                         },
                     )
                 }
@@ -260,7 +265,8 @@ fun LoginScreen(
                     },
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next
-                    )
+                    ),
+                    testTagSemantic = "InputNameRegister"
                 )
                 Text(
                     modifier = Modifier.padding(bottom = 2.dp),
@@ -280,7 +286,8 @@ fun LoginScreen(
                     },
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next
-                    )
+                    ),
+                    testTagSemantic = "InputEmailRegister"
                 )
                 Text(
                     modifier = Modifier.padding(bottom = 2.dp),
@@ -316,7 +323,11 @@ fun LoginScreen(
                         isLoading = vm.isLoading,
                         text = stringResource(id = R.string.button_text_confirm),
                         onClick = {
-                            vm.register()
+                            try {
+                                vm.register(context = context)
+                            } catch (e: ValidationError) {
+                                return@CustomButton
+                            }
                         },
                     )
                 }

@@ -59,8 +59,8 @@
     <string name="task_submission_placeholder">kasi link or tulis aja tempatnya bg...</string>
     <string name="task_deadline_placeholder">klik aja bg buat milih waktunya...</string>
 
-    <string name="there_is_no_classes">"There is no classes"</string>
-    <string name="there_is_no_taks">"There is no tasks"</string>
+    <string name="there_is_no_classes">There is no classes</string>
+    <string name="there_is_no_taks">There is no tasks</string>
 
-    <string name="notif_title">"%1$s, deadline nya %2$s"</string>
+    <string name="notif_title">"%1$s deadline nya %2$s"</string>
 </resources>
